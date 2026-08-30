@@ -8,7 +8,6 @@ export interface Expense {
   amount: number;
 }
 
-// New interface for individual investment pots
 export interface InvestmentPot {
   label: string;
   amount: number;
@@ -21,6 +20,9 @@ export interface InvestmentPot {
   templateUrl: './app.html',
 })
 export class App {
+  // Plan Header & Title
+  planTitle: string = 'My FIRE & Coast Plan';
+
   // Base Timeline Inputs
   currentAge: number = 30;
   retirementAge: number = 40;
@@ -50,7 +52,6 @@ export class App {
     this.pots.splice(index, 1);
   }
 
-  // Calculated starting pot total derived from the array of pots
   get startingPot(): number {
     return this.pots.reduce((sum, pot) => sum + (pot.amount || 0), 0);
   }
@@ -76,10 +77,6 @@ export class App {
 
   get totalAnnualExpenses(): number {
     return this.totalMonthlyExpenses * 12;
-  }
-
-  get annualExpenses(): number {
-    return this.totalAnnualExpenses;
   }
 
   get requiredMonthlyExpenses(): number {
@@ -124,19 +121,15 @@ export class App {
     return this.requiredPotAtAccessAge / Math.pow(1 + r, this.yearsCoasting);
   }
 
-get projectedPotAfterContributionPhase(): number {
-    // Determine effective monthly compounding rate based on inflation toggle
+  get projectedPotAfterContributionPhase(): number {
     const nominalMonthlyRate = this.expectedReturnRate / 100 / 12;
     const realMonthlyRate = (this.expectedReturnRate - this.inflationRate) / 100 / 12;
     
-    // Use nominal rate if contribution rises with inflation, real rate if flat
     const r = this.increaseContributionWithInflation ? nominalMonthlyRate : realMonthlyRate;
     const months = this.yearsContributing * 12;
     
-    // Future value of starting pot (always grows at nominal return rate)
     const startPotFV = this.startingPot * Math.pow(1 + nominalMonthlyRate, months);
     
-    // Future value of monthly contributions
     let contribFV = 0;
     if (months > 0) {
       if (r > 0) {
@@ -149,11 +142,23 @@ get projectedPotAfterContributionPhase(): number {
     return startPotFV + contribFV;
   }
 
+  get actualProjectedPotAtAccessAge(): number {
+    const r = this.expectedReturnRate / 100;
+    return this.projectedPotAfterContributionPhase * Math.pow(1 + r, this.yearsCoasting);
+  }
+
+  get surplusShortfallAtAccessAge(): number {
+    return this.actualProjectedPotAtAccessAge - this.requiredPotAtAccessAge;
+  }
+
+  get isCoastReady(): boolean {
+    return this.surplusShortfallAtAccessAge >= 0;
+  }
+
   calculateRequiredMonthlyInvestment() {
     const targetAtContributionEnd = this.requiredCoastPotAtEndOfContributions;
     const nominalMonthlyRate = this.expectedReturnRate / 100 / 12;
     const realMonthlyRate = (this.expectedReturnRate - this.inflationRate) / 100 / 12;
-    const increaseContributionWithInflation: boolean = false;
     const r = this.increaseContributionWithInflation ? nominalMonthlyRate : realMonthlyRate;
     
     const months = this.yearsContributing * 12;
@@ -171,23 +176,11 @@ get projectedPotAfterContributionPhase(): number {
     }
   }
 
-  get actualProjectedPotAtAccessAge(): number {
-    const r = this.expectedReturnRate / 100;
-    return this.projectedPotAfterContributionPhase * Math.pow(1 + r, this.yearsCoasting);
-  }
-
-  get surplusShortfallAtAccessAge(): number {
-    return this.actualProjectedPotAtAccessAge - this.requiredPotAtAccessAge;
-  }
-
-  get isCoastReady(): boolean {
-    return this.surplusShortfallAtAccessAge >= 0;
-  }
-
-  // --- EXCEL PERSISTENCE ---
+  // --- EXCEL DOWNLOAD / UPLOAD WITH DYNAMIC TITLE FILENAME ---
 
   downloadExcel() {
-const settingsRows = [
+    const settingsRows = [
+      { Setting: 'Plan Title', Value: this.planTitle },
       { Setting: 'Current Age', Value: this.currentAge },
       { Setting: 'Retirement Access Age', Value: this.retirementAge },
       { Setting: 'Payout Years', Value: this.retirementDurationYears },
@@ -216,7 +209,15 @@ const settingsRows = [
     XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(potRows), 'Pots');
     XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(expenseRows), 'Expenses');
 
-    XLSX.writeFile(workbook, 'FIRE_Calculator_Plan.xlsx');
+    // Generate safe filename from title
+    const sanitizedTitle = (this.planTitle || '')
+      .trim()
+      .replace(/[^a-zA-Z0-9_-]/g, '_')
+      .replace(/_+/g, '_');
+
+    const fileName = sanitizedTitle ? `${sanitizedTitle}.xlsx` : 'FIRE_Calculator_Plan.xlsx';
+
+    XLSX.writeFile(workbook, fileName);
   }
 
   uploadExcel(event: Event) {
@@ -231,20 +232,26 @@ const settingsRows = [
       const data = new Uint8Array(e.target?.result as ArrayBuffer);
       const workbook = XLSX.read(data, { type: 'array' });
 
-      // Parse Assumptions
+      // Parse Assumptions & Title
       if (workbook.SheetNames.includes('Assumptions')) {
         const settingsRows: any[] = XLSX.utils.sheet_to_json(workbook.Sheets['Assumptions']);
         settingsRows.forEach(row => {
-          const value = Number(row.Value) || 0;
+          const valString = String(row.Value ?? '');
+          const valNum = Number(row.Value) || 0;
+
           switch (row.Setting) {
-            case 'Current Age': this.currentAge = value; break;
-            case 'Retirement Access Age': this.retirementAge = value; break;
-            case 'Payout Years': this.retirementDurationYears = value; break;
-            case 'Years Contributing': this.yearsContributing = value; break;
-            case 'Expected Annual Return (%)': this.expectedReturnRate = value; break;
-            case 'Expected Inflation Rate (%)': this.inflationRate = value; break;
-            case 'Passive Monthly Income (£)': this.passiveMonthlyIncome = value; break;
-            case 'Monthly Investment Contribution (£)': this.monthlyContribution = value; break;
+            case 'Plan Title': this.planTitle = valString; break;
+            case 'Current Age': this.currentAge = valNum; break;
+            case 'Retirement Access Age': this.retirementAge = valNum; break;
+            case 'Payout Years': this.retirementDurationYears = valNum; break;
+            case 'Years Contributing': this.yearsContributing = valNum; break;
+            case 'Expected Annual Return (%)': this.expectedReturnRate = valNum; break;
+            case 'Expected Inflation Rate (%)': this.inflationRate = valNum; break;
+            case 'Increase Contribution With Inflation': 
+              this.increaseContributionWithInflation = valString.toLowerCase() === 'yes'; 
+              break;
+            case 'Passive Monthly Income (£)': this.passiveMonthlyIncome = valNum; break;
+            case 'Monthly Investment Contribution (£)': this.monthlyContribution = valNum; break;
           }
         });
       }
