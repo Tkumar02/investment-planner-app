@@ -1,6 +1,4 @@
-<div style="max-width: 850px; margin: 30px auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 20px;">
-
-  <div style="max-width: 850px; margin: 30px auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 20px; box-sizing: border-box;">
+<div style="max-width: 900px; margin: 30px auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 20px; box-sizing: border-box;">
   
   <!-- Header Title Input -->
   <div style="margin-bottom: 24px;">
@@ -10,7 +8,7 @@
     <input 
       type="text" 
       [(ngModel)]="planTitle" 
-      placeholder="e.g. Early Retirement Plan 2026" 
+      placeholder="e.g. Early Retirement Plan" 
       style="width: 100%; font-size: 24px; font-weight: 700; color: #0f172a; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; background: #ffffff;" 
     />
   </div>
@@ -46,9 +44,7 @@
         <input type="number" [(ngModel)]="passiveMonthlyIncome" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;" />
       </div>
       <div>
-        <label style="display: block; margin-bottom: 4px; font-size: 14px; font-weight: 500;">Monthly Investment Contribution (£):</label>
-        <input type="number" [(ngModel)]="monthlyContribution" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;" />
-        
+        <label style="display: block; margin-bottom: 4px; font-size: 14px; font-weight: 500;">Contribution Adjustments:</label>
         <label style="display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 13px; color: #475569; cursor: pointer;">
           <input type="checkbox" [(ngModel)]="increaseContributionWithInflation" style="cursor: pointer; width: 16px; height: 16px;" />
           Increase contributions with inflation annually
@@ -59,26 +55,66 @@
 
   <!-- 2. Timeline, Assumptions & Investment Pots Section -->
   <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); box-sizing: border-box;">
-    <h3 style="margin-top: 0; color: #334155;">2. Timeline & Assumptions</h3>
+    <h3 style="margin-top: 0; color: #334155;">2. Timeline & Investment Pots</h3>
     
-    <div style="margin-bottom: 20px;">
-      <label style="font-weight: 600; display: block; margin-bottom: 8px;">Starting Investment Pots:</label>
+   <div style="margin-bottom: 20px;">
+      <label style="font-weight: 600; display: block; margin-bottom: 12px;">Investment Pots Configuration:</label>
       
+      <!-- Desktop Column Headers (Hidden on Mobile) -->
+      <div class="desktop-pot-headers" style="display: grid; grid-template-columns: 2fr 1fr 90px 1fr 80px; gap: 8px; margin-bottom: 6px; font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">
+        <div>Account Name</div>
+        <div>Balance (£)</div>
+        <div>Return (%)</div>
+        <div>Monthly (£)</div>
+        <div></div>
+      </div>
+
+      <!-- Loop through Dynamic Pots -->
       @for (pot of pots; track $index) {
-        <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; align-items: center;">
-          <input type="text" [(ngModel)]="pot.label" placeholder="Account Name (e.g. ISA, Pension)" style="flex: 2; min-width: 160px; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;" />
-          <input type="number" [(ngModel)]="pot.amount" placeholder="Current Balance (£)" style="flex: 1; min-width: 110px; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;" />
-          <button (click)="removePot($index)" style="background: #ef4444; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; flex-shrink: 0;">Remove</button>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-bottom: 12px; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; align-items: end;">
+          
+          <div>
+            <label style="display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 2px;" class="mobile-only-label">Account Name</label>
+            <input type="text" [(ngModel)]="pot.label" placeholder="e.g. ISA, Pension" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box; background: #ffffff;" />
+          </div>
+
+          <div>
+            <label style="display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 2px;" class="mobile-only-label">Balance (£)</label>
+            <input type="number" [(ngModel)]="pot.amount" placeholder="20000" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box; background: #ffffff;" />
+          </div>
+
+          <div>
+            <label style="display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 2px;" class="mobile-only-label">Return (%)</label>
+            <input type="number" [(ngModel)]="pot.expectedReturnRate" placeholder="7" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box; background: #ffffff;" />
+          </div>
+
+          <div>
+            <label style="display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 2px;" class="mobile-only-label">Monthly (£)</label>
+            <input type="number" [(ngModel)]="pot.monthlyContribution" placeholder="500" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box; background: #ffffff;" />
+          </div>
+
+          <div style="display: flex; justify-content: flex-end;">
+            <button (click)="removePot($index)" style="width: 100%; background: #ef4444; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: 500;">Remove</button>
+          </div>
+
         </div>
       }
 
       <button (click)="addPot()" style="background: #3b82f6; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; margin-top: 4px;">+ Add Pot</button>
       
-      <div style="margin-top: 12px; padding: 12px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 6px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; box-sizing: border-box;">
-        <span style="font-weight: 500; color: #475569;">Total Starting Investment Pot:</span>
-        <span style="font-size: 18px; font-weight: 700; color: #0f172a;">
-          £{{ startingPot | number:'1.2-2' }}
-        </span>
+      <div style="margin-top: 12px; padding: 12px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 6px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; box-sizing: border-box;">
+        <div>
+          <span style="font-size: 13px; font-weight: 500; color: #475569; display: block;">Total Starting Balance:</span>
+          <span style="font-size: 18px; font-weight: 700; color: #0f172a;">£{{ startingPot | number:'1.2-2' }}</span>
+        </div>
+        <div>
+          <span style="font-size: 13px; font-weight: 500; color: #475569; display: block;">Total Monthly Contribution:</span>
+          <span style="font-size: 18px; font-weight: 700; color: #0f172a;">£{{ totalMonthlyContribution | number:'1.2-2' }}</span>
+        </div>
+        <div>
+          <span style="font-size: 13px; font-weight: 500; color: #475569; display: block;">Weighted Avg Return:</span>
+          <span style="font-size: 18px; font-weight: 700; color: #2563eb;">{{ averageContributionReturnRate | number:'1.1-2' }}%</span>
+        </div>
       </div>
     </div>
 
@@ -100,8 +136,8 @@
         <input type="number" [(ngModel)]="retirementDurationYears" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;" />
       </div>
       <div>
-        <label style="display: block; margin-bottom: 4px; font-size: 14px; font-weight: 500;">Expected Annual Return (%):</label>
-        <input type="number" [(ngModel)]="expectedReturnRate" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;" />
+        <label style="display: block; margin-bottom: 4px; font-size: 14px; font-weight: 500;">Retirement Phase Return Rate (%):</label>
+        <input type="number" [(ngModel)]="retirementReturnRate" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;" />
       </div>
       <div>
         <label style="display: block; margin-bottom: 4px; font-size: 14px; font-weight: 500;">Expected Inflation Rate (%):</label>
@@ -109,11 +145,37 @@
       </div>
     </div>
 
-    <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid #f1f5f9; text-align: right;">
-      <button (click)="calculateRequiredMonthlyInvestment()" style="width: 100%; max-width: 360px; background: #059669; color: white; border: none; padding: 10px 18px; border-radius: 6px; font-weight: 600; cursor: pointer;">
-        ⚡ Auto-Estimate Required Monthly Contribution
+    <!-- Estimator Solver Action Buttons -->
+    <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid #f1f5f9; display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end;">
+      <button (click)="estimateMonthlyContribution()" style="background: #059669; color: white; border: none; padding: 10px 16px; border-radius: 6px; font-weight: 600; cursor: pointer;">
+        ⚡ Estimate Required Monthly Contribution
+      </button>
+      <button (click)="estimateCoastingYears()" style="background: #0891b2; color: white; border: none; padding: 10px 16px; border-radius: 6px; font-weight: 600; cursor: pointer;">
+        ⏳ Estimate Coasting Years Needed
       </button>
     </div>
+
+    <!-- Interactive Estimate Preview Card -->
+    @if (activeEstimate) {
+      <div style="margin-top: 16px; padding: 16px; background: #f0fdf4; border: 1px solid #86efac; border-radius: 6px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px;">
+        <div>
+          <div style="font-size: 12px; font-weight: 700; color: #166534; text-transform: uppercase;">
+            {{ activeEstimate.label }}
+          </div>
+          <div style="font-size: 20px; font-weight: 800; color: #14532d;">
+            {{ activeEstimate.unit === '£' ? '£' : '' }}{{ activeEstimate.value | number:'1.0-2' }} {{ activeEstimate.unit !== '£' ? activeEstimate.unit : '' }}
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button (click)="applyEstimate()" style="background: #16a34a; color: white; border: none; padding: 8px 14px; border-radius: 4px; font-weight: 600; cursor: pointer;">
+            Apply Pro-Rata to Pots
+          </button>
+          <button (click)="dismissEstimate()" style="background: #94a3b8; color: white; border: none; padding: 8px 14px; border-radius: 4px; font-weight: 600; cursor: pointer;">
+            Dismiss
+          </button>
+        </div>
+      </div>
+    }
   </div>
 
   <!-- 3. Output Dashboard -->
@@ -123,7 +185,7 @@
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; font-size: 14px;">
       <div style="display: flex; justify-content: space-between;"><strong>Required Monthly Expenses (Today):</strong> <span>£{{ requiredMonthlyExpenses | number:'1.2-2' }}</span></div>
       <div style="display: flex; justify-content: space-between;"><strong>Net Annual Expenses (- Passive):</strong> <span>£{{ netAnnualRetirementExpenses | number:'1.2-2' }}</span></div>
-      <div style="display: flex; justify-content: space-between;"><strong>Expected Real Return:</strong> <span>{{ realReturnRate }}%</span></div>
+      <div style="display: flex; justify-content: space-between;"><strong>Expected Real Return (Retirement):</strong> <span>{{ realRetirementReturnRate }}%</span></div>
       <div style="display: flex; justify-content: space-between;"><strong>Years to Access Pot:</strong> <span>{{ yearsToAccess }} years</span></div>
       <div style="display: flex; justify-content: space-between;"><strong>Years Coasting:</strong> <span style="font-weight: bold; color: #047857;">{{ yearsCoasting }} years</span></div>
       <div style="display: flex; justify-content: space-between; border-top: 1px solid #bbf7d0; padding-top: 8px;"><strong>Inflated Annual Expenses at Access:</strong> <span>£{{ inflatedAnnualExpensesAtAccess | number:'1.2-2' }}</span></div>
@@ -146,201 +208,6 @@
     <!-- Excel Load/Save Actions -->
     <div style="display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; margin-top: 16px;">
       <label style="background: #475569; color: white; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; text-align: center;">
-        📂 Load Excel File
-        <input type="file" (change)="uploadExcel($event)" accept=".xlsx, .xls" style="display: none;" />
-      </label>
-
-      <button (click)="downloadExcel()" style="background: #10b981; color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: 600;">
-        📊 Download Excel File
-      </button>
-    </div>
-  </div>
-</div>
-
-  <!-- 1. Expenses & Income Section -->
-  <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-    <h3 style="margin-top: 0; color: #334155;">1. Expenses & Income (Today's Money)</h3>
-    
-    <div style="margin-bottom: 16px;">
-      <label style="font-weight: 600; display: block; margin-bottom: 8px;">Lifestyle Expenditures (Monthly):</label>
-      
-@for (expense of expenses; track $index) {
-  <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; align-items: center;">
-    <input 
-      type="text" 
-      [(ngModel)]="expense.label" 
-      placeholder="Description (e.g. Rent, Groceries)" 
-      style="flex: 2; min-width: 160px; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;" 
-    />
-    <input 
-      type="number" 
-      [(ngModel)]="expense.amount" 
-      placeholder="Monthly amount (£)" 
-      style="flex: 1; min-width: 110px; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;" 
-    />
-    <button 
-      (click)="removeExpense($index)" 
-      style="background: #ef4444; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; flex-shrink: 0;"
-    >
-      Remove
-    </button>
-  </div>
-}
-
-      <button (click)="addExpense()" style="background: #3b82f6; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; margin-top: 4px;">+ Add Expense</button>
-      
-      <div style="margin-top: 16px; padding: 12px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
-        <span style="font-weight: 500; color: #475569;">Total Annual Lifestyle Expense:</span>
-        <span style="font-size: 18px; font-weight: 700; color: #0f172a;">
-          £{{ totalAnnualExpenses | number:'1.2-2' }}
-        </span>
-      </div>
-    </div>
-
-    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;">
-      <div>
-        <label style="display: block; margin-bottom: 4px; font-size: 14px; font-weight: 500;">Passive Monthly Income (£):</label>
-        <input type="number" [(ngModel)]="passiveMonthlyIncome" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;" />
-      </div>
-      <div>
-        <label style="display: block; margin-bottom: 4px; font-size: 14px; font-weight: 500;">Monthly Investment Contribution (£):</label>
-        <input type="number" [(ngModel)]="monthlyContribution" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;" />
-        <!-- Inflation Checkbox Toggle -->
-    <label style="display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 13px; color: #475569; cursor: pointer;">
-      <input type="checkbox" [(ngModel)]="increaseContributionWithInflation" style="cursor: pointer; width: 16px; height: 16px;" />
-      Increase contributions with inflation annualy
-    </label>
-      </div>
-    </div>
-  </div>
-
-  <!-- 2. Timeline, Assumptions & Investment Pots Section -->
-  <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-    <h3 style="margin-top: 0; color: #334155;">2. Timeline & Assumptions</h3>
-    
-    <!-- Dynamic Pots Array -->
-    <div style="margin-bottom: 20px;">
-      <label style="font-weight: 600; display: block; margin-bottom: 8px;">Starting Investment Pots:</label>
-      
-@for (pot of pots; track $index) {
-  <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; align-items: center;">
-    <input 
-      type="text" 
-      [(ngModel)]="pot.label" 
-      placeholder="Account Name (e.g. ISA, Pension)" 
-      style="flex: 2; min-width: 160px; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;" 
-    />
-    <input 
-      type="number" 
-      [(ngModel)]="pot.amount" 
-      placeholder="Current Balance (£)" 
-      style="flex: 1; min-width: 110px; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;" 
-    />
-    <button 
-      (click)="removePot($index)" 
-      style="background: #ef4444; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; flex-shrink: 0;"
-    >
-      Remove
-    </button>
-  </div>
-}
-
-      <button (click)="addPot()" style="background: #3b82f6; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; margin-top: 4px;">+ Add Pot</button>
-      
-      <!-- Total Starting Pot Display -->
-      <div style="margin-top: 12px; padding: 12px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
-        <span style="font-weight: 500; color: #475569;">Total Starting Investment Pot:</span>
-        <span style="font-size: 18px; font-weight: 700; color: #0f172a;">
-          £{{ startingPot | number:'1.2-2' }}
-        </span>
-      </div>
-    </div>
-
-    <!-- Timeline Grid Inputs -->
-    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;">
-      <div>
-        <label style="display: block; margin-bottom: 4px; font-size: 14px; font-weight: 500;">Years Contributing:</label>
-        <input type="number" [(ngModel)]="yearsContributing" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;" />
-      </div>
-      <div>
-        <label style="display: block; margin-bottom: 4px; font-size: 14px; font-weight: 500;">Current Age:</label>
-        <input type="number" [(ngModel)]="currentAge" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;" />
-      </div>
-      <div>
-        <label style="display: block; margin-bottom: 4px; font-size: 14px; font-weight: 500;">Retirement Access Age:</label>
-        <input type="number" [(ngModel)]="retirementAge" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;" />
-      </div>
-      <div>
-        <label style="display: block; margin-bottom: 4px; font-size: 14px; font-weight: 500;">Payout Years (Retirement Duration):</label>
-        <input type="number" [(ngModel)]="retirementDurationYears" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;" />
-      </div>
-      <div>
-        <label style="display: block; margin-bottom: 4px; font-size: 14px; font-weight: 500;">Expected Annual Return (%):</label>
-        <input type="number" [(ngModel)]="expectedReturnRate" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;" />
-      </div>
-      <div>
-        <label style="display: block; margin-bottom: 4px; font-size: 14px; font-weight: 500;">Expected Inflation Rate (%):</label>
-        <input type="number" [(ngModel)]="inflationRate" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;" />
-      </div>
-    </div>
-
-    <!-- Estimator Solver Button -->
-    <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid #f1f5f9; text-align: right;">
-      <button (click)="calculateRequiredMonthlyInvestment()" style="background: #059669; color: white; border: none; padding: 10px 18px; border-radius: 6px; font-weight: 600; cursor: pointer;">
-        ⚡ Auto-Estimate Required Monthly Contribution
-      </button>
-    </div>
-  </div>
-
-  <!-- 3. Output Dashboard -->
-  <div style="background: #dcfce7; border: 1px solid #86efac; border-radius: 8px; padding: 20px; color: #14532d;">
-    <h3 style="margin-top: 0; color: #166534;">3. Calculated Results & Projections</h3>
-    
-    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; font-size: 14px;">
-      <div><strong>Required Monthly Expenses (Today):</strong></div>
-      <div style="text-align: right;">£{{ requiredMonthlyExpenses | number:'1.2-2' }}</div>
-
-      <div><strong>Net Annual Expenses (- Passive):</strong></div>
-      <div style="text-align: right;">£{{ netAnnualRetirementExpenses | number:'1.2-2' }}</div>
-
-      <div><strong>Expected Real Return:</strong></div>
-      <div style="text-align: right;">{{ realReturnRate }}%</div>
-
-      <div><strong>Years to Access Pot:</strong></div>
-      <div style="text-align: right;">{{ yearsToAccess }} years</div>
-
-      <div><strong>Years Coasting:</strong></div>
-      <div style="text-align: right; font-weight: bold; color: #047857;">{{ yearsCoasting }} years</div>
-
-      <div style="border-top: 1px solid #bbf7d0; padding-top: 8px;"><strong>Inflated Annual Expenses at Access:</strong></div>
-      <div style="border-top: 1px solid #bbf7d0; padding-top: 8px; text-align: right;">£{{ inflatedAnnualExpensesAtAccess | number:'1.2-2' }}</div>
-
-      <div><strong>Required Pot at Access Age:</strong></div>
-      <div style="text-align: right; font-weight: bold;">£{{ requiredPotAtAccessAge | number:'1.2-2' }}</div>
-
-      <div><strong>Required Coast Pot (End of Contributions):</strong></div>
-      <div style="text-align: right; font-weight: bold;">£{{ requiredCoastPotAtEndOfContributions | number:'1.2-2' }}</div>
-
-      <div style="border-top: 1px solid #bbf7d0; padding-top: 8px;"><strong>Projected Pot After Contribution Phase:</strong></div>
-      <div style="border-top: 1px solid #bbf7d0; padding-top: 8px; text-align: right;">£{{ projectedPotAfterContributionPhase | number:'1.2-2' }}</div>
-
-      <div><strong>Actual Projected Pot at Access Age:</strong></div>
-      <div style="text-align: right; font-weight: bold;">£{{ actualProjectedPotAtAccessAge | number:'1.2-2' }}</div>
-
-      <div><strong>Surplus / Shortfall at Access Age:</strong></div>
-      <div style="text-align: right; font-weight: bold;" [style.color]="surplusShortfallAtAccessAge >= 0 ? '#15803d' : '#b91c1c'">
-        £{{ surplusShortfallAtAccessAge | number:'1.2-2' }}
-      </div>
-    </div>
-
-    <!-- Final Readiness Banner -->
-    <div [style.background]="isCoastReady ? '#22c55e' : '#ef4444'" style="color: white; margin-top: 20px; padding: 14px; border-radius: 6px; text-align: center; font-size: 18px; font-weight: bold;">
-      {{ isCoastReady ? 'YES - You can Coast!' : 'NO - Shortfall identified' }}
-    </div>
-
-    <!-- Excel Load/Save Actions -->
-    <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px;">
-      <label style="background: #475569; color: white; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; display: inline-block;">
         📂 Load Excel File
         <input type="file" (change)="uploadExcel($event)" accept=".xlsx, .xls" style="display: none;" />
       </label>
