@@ -13,46 +13,6 @@
     />
   </div>
 
-  <!-- 1. Expenses & Income Section -->
-  <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); box-sizing: border-box;">
-    <h3 style="margin-top: 0; color: #334155;">1. Expenses & Income (Today's Money)</h3>
-    
-    <div style="margin-bottom: 16px;">
-      <label style="font-weight: 600; display: block; margin-bottom: 8px;">Lifestyle Expenditures (Monthly):</label>
-      
-      @for (expense of expenses; track $index) {
-        <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; align-items: center;">
-          <input type="text" [(ngModel)]="expense.label" placeholder="Description (e.g. Rent, Groceries)" style="flex: 2; min-width: 160px; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;" />
-          <input type="number" [(ngModel)]="expense.amount" placeholder="Monthly amount (£)" style="flex: 1; min-width: 110px; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;" />
-          <button (click)="removeExpense($index)" style="background: #ef4444; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; flex-shrink: 0;">Remove</button>
-        </div>
-      }
-
-      <button (click)="addExpense()" style="background: #3b82f6; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; margin-top: 4px;">+ Add Expense</button>
-      
-      <div style="margin-top: 16px; padding: 12px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 6px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; box-sizing: border-box;">
-        <span style="font-weight: 500; color: #475569;">Total Annual Lifestyle Expense:</span>
-        <span style="font-size: 18px; font-weight: 700; color: #0f172a;">
-          £{{ totalAnnualExpenses | number:'1.2-2' }}
-        </span>
-      </div>
-    </div>
-
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
-      <div>
-        <label style="display: block; margin-bottom: 4px; font-size: 14px; font-weight: 500;">Passive Monthly Income (£):</label>
-        <input type="number" [(ngModel)]="passiveMonthlyIncome" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;" />
-      </div>
-      <div>
-        <label style="display: block; margin-bottom: 4px; font-size: 14px; font-weight: 500;">Contribution Adjustments:</label>
-        <label style="display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 13px; color: #475569; cursor: pointer;">
-          <input type="checkbox" [(ngModel)]="increaseContributionWithInflation" style="cursor: pointer; width: 16px; height: 16px;" />
-          Increase contributions with inflation annually
-        </label>
-      </div>
-    </div>
-  </div>
-
   <!-- 2. Timeline, Assumptions & Investment Pots Section -->
   <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); box-sizing: border-box;">
     <h3 style="margin-top: 0; color: #334155;">2. Timeline & Investment Pots</h3>
@@ -61,13 +21,19 @@
       <label style="font-weight: 600; display: block; margin-bottom: 12px;">Investment Pots Configuration:</label>
       
       <!-- Desktop Column Headers (Hidden on Mobile) -->
-      <div class="desktop-pot-headers" style="display: grid; grid-template-columns: 2fr 1fr 90px 1fr 80px; gap: 8px; margin-bottom: 6px; font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">
-        <div>Account Name</div>
+      <!-- <div class="desktop-pot-headers" style="display: grid; grid-template-columns: 2fr 1fr 90px 1fr 90px 90px 90px 90px 90px 80px 80px; gap: 8px; margin-bottom: 6px; font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">
+        <div>Accounts Name</div>
         <div>Balance (£)</div>
         <div>Return (%)</div>
         <div>Monthly (£)</div>
+        <div>Access Age</div>
+        <div>Payout Yrs</div>
+        <div>Contrib Yrs</div>
+        <div>Monthly Exp (£)</div>
+        <div>Passive Inc (£)</div>
+        <div>Taxable?</div>
         <div></div>
-      </div>
+      </div> -->
 
       <!-- Loop through Dynamic Pots -->
       @for (pot of pots; track $index) {
@@ -91,6 +57,38 @@
           <div>
             <label style="display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 2px;" class="mobile-only-label">Monthly (£)</label>
             <input type="number" [(ngModel)]="pot.monthlyContribution" placeholder="500" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box; background: #ffffff;" />
+          </div>
+
+          <div>
+            <label style="display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 2px;" class="mobile-only-label">Access Age</label>
+            <input type="number" [(ngModel)]="pot.accessAge" placeholder="Default" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box; background: #ffffff;" />
+          </div>
+          
+          <div>
+            <label style="display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 2px;" class="mobile-only-label">Payout Yrs</label>
+            <input type="number" [(ngModel)]="pot.payoutYears" placeholder="Default" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box; background: #ffffff;" />
+          </div>
+
+          <div>
+            <label style="display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 2px;" class="mobile-only-label">Contrib Yrs</label>
+            <input type="number" [(ngModel)]="pot.yearsContributing" placeholder="Default" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box; background: #ffffff;" />
+          </div>
+
+          <div>
+            <label style="display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 2px;" class="mobile-only-label">Monthly Exp (£)</label>
+            <input type="number" [(ngModel)]="pot.monthlyExpenditure" placeholder="0" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box; background: #ffffff;" />
+          </div>
+
+          <div>
+            <label style="display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 2px;" class="mobile-only-label">Passive Inc (£)</label>
+            <input type="number" [(ngModel)]="pot.passiveIncome" placeholder="0" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box; background: #ffffff;" />
+          </div>
+
+          <div style="display: flex; align-items: center; justify-content: center; height: 100%;">
+            <label style="display: flex; flex-direction: column; align-items: center; font-size: 11px; font-weight: 600; color: #64748b; cursor: pointer;">
+              <span class="mobile-only-label" style="margin-bottom: 2px;">Taxable?</span>
+              <input type="checkbox" [(ngModel)]="pot.isTaxable" style="cursor: pointer; width: 16px; height: 16px; margin: 0;" />
+            </label>
           </div>
 
           <div style="display: flex; justify-content: flex-end;">
@@ -120,21 +118,10 @@
 
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
       <div>
-        <label style="display: block; margin-bottom: 4px; font-size: 14px; font-weight: 500;">Years Contributing:</label>
-        <input type="number" [(ngModel)]="yearsContributing" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;" />
-      </div>
-      <div>
         <label style="display: block; margin-bottom: 4px; font-size: 14px; font-weight: 500;">Current Age:</label>
         <input type="number" [(ngModel)]="currentAge" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;" />
       </div>
-      <div>
-        <label style="display: block; margin-bottom: 4px; font-size: 14px; font-weight: 500;">Retirement Access Age:</label>
-        <input type="number" [(ngModel)]="retirementAge" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;" />
-      </div>
-      <div>
-        <label style="display: block; margin-bottom: 4px; font-size: 14px; font-weight: 500;">Payout Years (Retirement Duration):</label>
-        <input type="number" [(ngModel)]="retirementDurationYears" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;" />
-      </div>
+
       <div>
         <label style="display: block; margin-bottom: 4px; font-size: 14px; font-weight: 500;">Retirement Phase Return Rate (%):</label>
         <input type="number" [(ngModel)]="retirementReturnRate" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;" />
@@ -142,6 +129,10 @@
       <div>
         <label style="display: block; margin-bottom: 4px; font-size: 14px; font-weight: 500;">Expected Inflation Rate (%):</label>
         <input type="number" [(ngModel)]="inflationRate" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;" />
+      </div>
+      <div>
+        <label style="display: block; margin-bottom: 4px; font-size: 14px; font-weight: 500;">Tax Rate on Withdrawals (%):</label>
+        <input type="number" [(ngModel)]="taxRate" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;" />
       </div>
     </div>
 
@@ -151,7 +142,7 @@
         ⚡ Estimate Required Monthly Contribution
       </button>
       <button (click)="estimateCoastingYears()" style="background: #0891b2; color: white; border: none; padding: 10px 16px; border-radius: 6px; font-weight: 600; cursor: pointer;">
-        ⏳ Estimate Coasting Years Needed
+        ⏳ Estimate Delay to Access Ages
       </button>
     </div>
 
@@ -183,27 +174,31 @@
     <h3 style="margin-top: 0; color: #166534;">3. Calculated Results & Projections</h3>
     
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; font-size: 14px;">
-      <div style="display: flex; justify-content: space-between;"><strong>Required Monthly Expenses (Today):</strong> <span>£{{ requiredMonthlyExpenses | number:'1.2-2' }}</span></div>
-      <div style="display: flex; justify-content: space-between;"><strong>Net Annual Expenses (- Passive):</strong> <span>£{{ netAnnualRetirementExpenses | number:'1.2-2' }}</span></div>
       <div style="display: flex; justify-content: space-between;"><strong>Expected Real Return (Retirement):</strong> <span>{{ realRetirementReturnRate }}%</span></div>
-      <div style="display: flex; justify-content: space-between;"><strong>Years to Access Pot:</strong> <span>{{ yearsToAccess }} years</span></div>
+      
+      <div style="display: flex; justify-content: space-between; border-top: 1px solid #bbf7d0; padding-top: 8px;"><strong>Years to First Pot Access:</strong> <span>{{ yearsToFirstAccess }} years</span></div>
       <div style="display: flex; justify-content: space-between;"><strong>Years Coasting:</strong> <span style="font-weight: bold; color: #047857;">{{ yearsCoasting }} years</span></div>
-      <div style="display: flex; justify-content: space-between; border-top: 1px solid #bbf7d0; padding-top: 8px;"><strong>Inflated Annual Expenses at Access:</strong> <span>£{{ inflatedAnnualExpensesAtAccess | number:'1.2-2' }}</span></div>
-      <div style="display: flex; justify-content: space-between;"><strong>Required Pot at Access Age:</strong> <span style="font-weight: bold;">£{{ requiredPotAtAccessAge | number:'1.2-2' }}</span></div>
-      <div style="display: flex; justify-content: space-between;"><strong>Required Coast Pot (End of Contributions):</strong> <span style="font-weight: bold;">£{{ requiredCoastPotAtEndOfContributions | number:'1.2-2' }}</span></div>
-      <div style="display: flex; justify-content: space-between; border-top: 1px solid #bbf7d0; padding-top: 8px;"><strong>Projected Pot After Contribution Phase:</strong> <span>£{{ projectedPotAfterContributionPhase | number:'1.2-2' }}</span></div>
-      <div style="display: flex; justify-content: space-between;"><strong>Actual Projected Pot at Access Age:</strong> <span style="font-weight: bold;">£{{ actualProjectedPotAtAccessAge | number:'1.2-2' }}</span></div>
-      <div style="display: flex; justify-content: space-between;"><strong>Surplus / Shortfall at Access Age:</strong> 
-        <span style="font-weight: bold;" [style.color]="surplusShortfallAtAccessAge >= 0 ? '#15803d' : '#b91c1c'">
-          £{{ surplusShortfallAtAccessAge | number:'1.2-2' }}
+      
+      <div style="display: flex; justify-content: space-between; border-top: 1px solid #bbf7d0; padding-top: 8px;"><strong>Total Equivalent Required Pot*:</strong> <span style="font-weight: bold;">£{{ pvRequiredPotAtFirstAccess | number:'1.2-2' }}</span></div>
+      <div style="display: flex; justify-content: space-between;"><strong>Total Equivalent Projected Pot*:</strong> <span style="font-weight: bold;">£{{ pvProjectedPotAtFirstAccess | number:'1.2-2' }}</span></div>
+      
+      <div style="display: flex; justify-content: space-between; border-top: 1px solid #bbf7d0; padding-top: 8px;"><strong>Equivalent Surplus / Shortfall*:</strong> 
+        <span style="font-weight: bold;" [style.color]="pvSurplusShortfall >= 0 ? '#15803d' : '#b91c1c'">
+          £{{ pvSurplusShortfall | number:'1.2-2' }}
         </span>
       </div>
+    </div>
+    
+    <div style="font-size: 11px; color: #166534; margin-top: 12px; opacity: 0.8;">
+      * <strong>Note on Totals:</strong> These figures represent an <em>overall</em> "Present Value" mathematical equivalent across all your pots combined. 
+      Because pots are accessed at different ages, it is possible to have an <strong>Overall Equivalent Surplus</strong>, but still have a shortfall in specific years (e.g., a "gap" before your pension kicks in).
     </div>
 
     <!-- Final Readiness Banner -->
     <div [style.background]="isCoastReady ? '#22c55e' : '#ef4444'" style="color: white; margin-top: 20px; padding: 14px; border-radius: 6px; text-align: center; font-size: 18px; font-weight: bold;">
-      {{ isCoastReady ? 'YES - You can Coast!' : 'NO - Shortfall identified' }}
+      {{ isCoastReady ? 'YES - All years are fully funded! You can Coast!' : 'NO - Cashflow shortfall identified in one or more years! (See table below)' }}
     </div>
+
 
     <!-- Excel Load/Save Actions -->
     <div style="display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; margin-top: 16px;">
@@ -215,6 +210,45 @@
       <button (click)="downloadExcel()" style="background: #10b981; color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: 600;">
         📊 Download Excel File
       </button>
+    </div>
+  </div>
+
+  <!-- 4. Retirement Phase Analysis -->
+  <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-top: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); box-sizing: border-box;">
+    <h3 style="margin-top: 0; color: #334155;">4. Cashflow Phase Analysis</h3>
+    <p style="font-size: 13px; color: #64748b; margin-bottom: 16px;">
+      This tells you if your combined income is sufficient during the specific years each pot is active.
+    </p>
+
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      @for (analysis of potSuccessAnalysis; track analysis.potLabel) {
+        <div style="padding: 14px; border-radius: 6px; border: 1px solid" 
+             [style.borderColor]="analysis.isSuccessful ? '#86efac' : '#fca5a5'"
+             [style.backgroundColor]="analysis.isSuccessful ? '#f0fdf4' : '#fef2f2'">
+          
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <strong style="font-size: 15px; color: #0f172a;">{{ analysis.potLabel }}</strong>
+              <span style="font-size: 13px; color: #475569; margin-left: 8px;">({{ analysis.years }})</span>
+            </div>
+            
+            <div style="font-weight: 700; font-size: 14px;" 
+                 [style.color]="analysis.isSuccessful ? '#16a34a' : '#ef4444'">
+              {{ analysis.isSuccessful ? '✅ Successful' : '❌ Shortfall Identified' }}
+            </div>
+          </div>
+          
+          @if (!analysis.isSuccessful) {
+            <div style="margin-top: 6px; font-size: 13px; color: #b91c1c;">
+              During this period, there is a shortfall reaching up to <strong>£{{ analysis.maxShortfall | number:'1.0-0' }} / year</strong>.
+            </div>
+          } @else {
+            <div style="margin-top: 6px; font-size: 13px; color: #15803d;">
+              Your combined income during this period fully covers your requirements!
+            </div>
+          }
+        </div>
+      }
     </div>
   </div>
 </div>

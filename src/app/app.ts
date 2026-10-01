@@ -3,16 +3,18 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import * as XLSX from 'xlsx';
 
-export interface Expense {
-  label: string;
-  amount: number;
-}
 
 export interface InvestmentPot {
   label: string;
   amount: number;
   expectedReturnRate: number; // Individual return rate per pot (%)
   monthlyContribution: number; // Individual monthly contribution per pot (£)
+  accessAge: number;
+  isTaxable: boolean;
+  payoutYears: number;
+  yearsContributing: number;
+  monthlyExpenditure: number;
+  passiveIncome: number;
 }
 
 export interface EstimateResult {
@@ -34,16 +36,13 @@ export class App {
 
   // Base Timeline Inputs
   currentAge: number = 30;
-  retirementAge: number = 40;
-  yearsContributing: number = 8;
-  retirementDurationYears: number = 30; // Payout duration in years
 
   // Contributions & Passive Income
-  passiveMonthlyIncome: number = 1000;
   increaseContributionWithInflation: boolean = false;
 
   // Global Rates
   inflationRate: number = 3; // %
+  taxRate: number = 20; // Default tax rate for taxable pots (%)
   retirementReturnRate: number = 5; // % Return rate during retirement payout phase
 
   // Active Estimate Storage for Preview Box
@@ -51,13 +50,13 @@ export class App {
 
   // Dynamic Array of Investment Pots
   pots: InvestmentPot[] = [
-    { label: 'Stocks & Shares ISA', amount: 20000, expectedReturnRate: 7, monthlyContribution: 800 },
-    { label: 'Cash Savings', amount: 5000, expectedReturnRate: 4, monthlyContribution: 100 },
-    { label: 'Workplace Pension', amount: 10000, expectedReturnRate: 7, monthlyContribution: 433 }
+    { label: 'Stocks & Shares ISA', amount: 20000, expectedReturnRate: 7, monthlyContribution: 800, isTaxable: false, accessAge: 50, payoutYears: 15, yearsContributing: 8, monthlyExpenditure: 3500, passiveIncome: 0 },
+    { label: 'Cash Savings', amount: 5000, expectedReturnRate: 4, monthlyContribution: 100, isTaxable: false, accessAge: 40, payoutYears: 10, yearsContributing: 5, monthlyExpenditure: 0, passiveIncome: 0 },
+    { label: 'Workplace Pension', amount: 10000, expectedReturnRate: 7, monthlyContribution: 433, isTaxable: true, accessAge: 60, payoutYears: 30, yearsContributing: 10, monthlyExpenditure: 0, passiveIncome: 1000 }
   ];
 
   addPot() {
-    this.pots.push({ label: '', amount: 0, expectedReturnRate: 5, monthlyContribution: 0 });
+    this.pots.push({ label: '', amount: 0, expectedReturnRate: 5, monthlyContribution: 0, isTaxable: false, accessAge: 55, payoutYears: 30, yearsContributing: 10, monthlyExpenditure: 0, passiveIncome: 0 });
   }
 
   removePot(index: number) {
@@ -86,184 +85,251 @@ export class App {
     return weightedSum / totalContrib;
   }
 
-  // Dynamic Expenses (Monthly Inputs)
-  expenses: Expense[] = [
-    { label: 'Core Lifestyle Costs', amount: 3500 }
-  ];
 
-  addExpense() {
-    this.expenses.push({ label: '', amount: 0 });
-  }
-
-  removeExpense(index: number) {
-    this.expenses.splice(index, 1);
-  }
 
   // --- CALCULATED FIELDS (GETTERS) ---
 
-  get totalMonthlyExpenses(): number {
-    return this.expenses.reduce((sum, item) => sum + (item.amount || 0), 0);
+
+  get yearsToFirstAccess(): number {
+    if (this.pots.length === 0) return 0;
+    const firstAccess = Math.min(...this.pots.map(p => p.accessAge));
+    return Math.max(0, firstAccess - this.currentAge);
   }
 
-  get totalAnnualExpenses(): number {
-    return this.totalMonthlyExpenses * 12;
+  get yearsCoasting(): number {
+    if (this.pots.length === 0) return 0;
+    const maxContrib = Math.max(...this.pots.map(p => p.yearsContributing));
+    return Math.max(0, this.yearsToFirstAccess - maxContrib);
   }
 
-  get requiredMonthlyExpenses(): number {
-    return this.totalMonthlyExpenses;
+  get pvRequiredPotAtFirstAccess(): number {
+    const cashflow = this.retirementCashflowProjection;
+    if (cashflow.length === 0) return 0;
+    
+    const rReal = this.realRetirementReturnRate / 100;
+    let totalPV = 0;
+    
+    cashflow.forEach((row, index) => {
+      if (rReal === 0) {
+        totalPV += row.requiredIncome;
+      } else {
+        totalPV += row.requiredIncome / Math.pow(1 + rReal, index);
+      }
+    });
+    
+    return totalPV;
   }
 
-  get netAnnualRetirementExpenses(): number {
-    const netMonthly = Math.max(0, this.totalMonthlyExpenses - (this.passiveMonthlyIncome || 0));
-    return netMonthly * 12;
+  get pvProjectedPotAtFirstAccess(): number {
+    const cashflow = this.retirementCashflowProjection;
+    if (cashflow.length === 0) return 0;
+    
+    const rReal = this.realRetirementReturnRate / 100;
+    let totalPV = 0;
+    
+    cashflow.forEach((row, index) => {
+      if (rReal === 0) {
+        totalPV += row.totalIncome;
+      } else {
+        totalPV += row.totalIncome / Math.pow(1 + rReal, index);
+      }
+    });
+    
+    return totalPV;
+  }
+
+
+  get potSuccessAnalysis(): { potLabel: string, isSuccessful: boolean, maxShortfall: number, years: string }[] {
+    const cashflow = this.retirementCashflowProjection;
+    if (cashflow.length === 0) return [];
+    
+    return this.pots.map(pot => {
+      const activeYears = cashflow.filter(row => row.age >= pot.accessAge && row.age < (pot.accessAge + pot.payoutYears));
+      const isSuccessful = activeYears.length > 0 && !activeYears.some(row => row.shortfall > 0);
+      const maxShortfall = activeYears.length > 0 ? Math.max(...activeYears.map(row => row.shortfall)) : 0;
+      
+      return {
+        potLabel: pot.label || 'Unnamed Pot',
+        isSuccessful,
+        maxShortfall,
+        years: `Ages ${pot.accessAge} to ${pot.accessAge + pot.payoutYears}`
+      };
+    });
+  }
+
+  get pvSurplusShortfall(): number {
+    return this.pvProjectedPotAtFirstAccess - this.pvRequiredPotAtFirstAccess;
   }
 
   get realRetirementReturnRate(): number {
     return this.retirementReturnRate - this.inflationRate;
   }
 
-  get yearsToAccess(): number {
-    return Math.max(0, this.retirementAge - this.currentAge);
-  }
 
-  get yearsCoasting(): number {
-    return Math.max(0, this.yearsToAccess - this.yearsContributing);
-  }
 
-  get inflatedAnnualExpensesAtAccess(): number {
-    const i = this.inflationRate / 100;
-    return this.netAnnualRetirementExpenses * Math.pow(1 + i, this.yearsToAccess);
-  }
 
-  // Payout Years Present Value Model
-  get requiredPotAtAccessAge(): number {
-    const years = this.retirementDurationYears;
-    const annualExpense = this.inflatedAnnualExpensesAtAccess;
-    const r = this.realRetirementReturnRate / 100;
-
-    if (years <= 0 || annualExpense <= 0) return 0;
-    if (r === 0) return annualExpense * years;
-
-    return annualExpense * ((1 - Math.pow(1 + r, -years)) / r);
-  }
-
-  // Required Coast Pot target at the end of contribution phase
-  get requiredCoastPotAtEndOfContributions(): number {
-    const coastingRate = this.averageContributionReturnRate / 100;
-    if (this.yearsCoasting <= 0) {
-      return this.requiredPotAtAccessAge;
-    }
-    return this.requiredPotAtAccessAge / Math.pow(1 + coastingRate, this.yearsCoasting);
-  }
-
-  // Calculates starting balances growth for all pots during contribution phase
-  get startingPotsValueAfterContributionPhase(): number {
-    const years = this.yearsContributing;
-    return this.pots.reduce((sum, pot) => {
-      const potRate = (pot.expectedReturnRate || 0) / 100;
-      return sum + (pot.amount || 0) * Math.pow(1 + potRate, years);
-    }, 0);
-  }
-
-  // Calculates future value of per-pot monthly contributions individually
-  get newContributionsValueAfterContributionPhase(): number {
-    const months = this.yearsContributing * 12;
-    if (months <= 0) return 0;
-
-    return this.pots.reduce((sum, pot) => {
-      const nominalMonthlyRate = (pot.expectedReturnRate || 0) / 100 / 12;
-      const realMonthlyRate = ((pot.expectedReturnRate || 0) - this.inflationRate) / 100 / 12;
-      const r = this.increaseContributionWithInflation ? nominalMonthlyRate : realMonthlyRate;
-      const contrib = pot.monthlyContribution || 0;
-
-      if (r > 0) {
-        return sum + contrib * ((Math.pow(1 + r, months) - 1) / r);
-      }
-      return sum + contrib * months;
-    }, 0);
-  }
-
-  get projectedPotAfterContributionPhase(): number {
-    return this.startingPotsValueAfterContributionPhase + this.newContributionsValueAfterContributionPhase;
-  }
-
-  // Value of starting pots grown all the way to retirement access age
-  get startingPotsValueAtAccessAge(): number {
-    const totalYears = this.yearsToAccess;
-    return this.pots.reduce((sum, pot) => {
-      const potRate = (pot.expectedReturnRate || 0) / 100;
-      return sum + (pot.amount || 0) * Math.pow(1 + potRate, totalYears);
-    }, 0);
-  }
-
-  // Value of contributions grown through the coasting phase
-  get newContributionsValueAtAccessAge(): number {
-    const coastingRate = this.averageContributionReturnRate / 100;
-    return this.newContributionsValueAfterContributionPhase * Math.pow(1 + coastingRate, this.yearsCoasting);
-  }
-
-  get actualProjectedPotAtAccessAge(): number {
-    return this.startingPotsValueAtAccessAge + this.newContributionsValueAtAccessAge;
-  }
-
-  get surplusShortfallAtAccessAge(): number {
-    return this.actualProjectedPotAtAccessAge - this.requiredPotAtAccessAge;
-  }
 
   get isCoastReady(): boolean {
-    return this.surplusShortfallAtAccessAge >= 0;
+    const cashflow = this.retirementCashflowProjection;
+    if (cashflow.length === 0) return false;
+    return !cashflow.some((row: any) => row.shortfall > 0);
   }
+
+  get retirementCashflowProjection(): any[] {
+    if (this.pots.length === 0) return [];
+
+    const startAge = Math.min(...this.pots.map(p => p.accessAge));
+    let endAge = startAge;
+
+    this.pots.forEach(pot => {
+      if (pot.accessAge + pot.payoutYears > endAge) {
+        endAge = pot.accessAge + pot.payoutYears;
+      }
+    });
+
+    const projection = [];
+    for (let age = startAge; age < endAge; age++) {
+      const yearFromCurrent = Math.max(0, age - this.currentAge);
+      
+      let totalExpenditureToday = 0;
+      let totalPassiveToday = 0;
+      let totalIncome = 0;
+      let incomeBreakdown: any = {};
+
+      this.pots.forEach(pot => {
+        if (age >= pot.accessAge && age < pot.accessAge + pot.payoutYears) {
+          totalExpenditureToday += (pot.monthlyExpenditure || 0) * 12;
+          totalPassiveToday += (pot.passiveIncome || 0) * 12;
+          const totalYearsGrowth = Math.max(0, pot.accessAge - this.currentAge);
+          const coastingYears = Math.max(0, pot.accessAge - this.currentAge - pot.yearsContributing);
+          const potRate = (pot.expectedReturnRate || 0) / 100;
+          
+          let startingVal = (pot.amount || 0) * Math.pow(1 + potRate, totalYearsGrowth);
+          
+          let contribValueAtEnd = 0;
+          const months = pot.yearsContributing * 12;
+          if (months > 0) {
+            const nominalMonthlyRate = (pot.expectedReturnRate || 0) / 100 / 12;
+            const realMonthlyRate = ((pot.expectedReturnRate || 0) - this.inflationRate) / 100 / 12;
+            const r = this.increaseContributionWithInflation ? nominalMonthlyRate : realMonthlyRate;
+            const contrib = pot.monthlyContribution || 0;
+            if (r > 0) {
+              contribValueAtEnd = contrib * ((Math.pow(1 + r, months) - 1) / r);
+            } else {
+              contribValueAtEnd = contrib * months;
+            }
+          }
+          let contribVal = contribValueAtEnd * Math.pow(1 + potRate, coastingYears);
+          
+          let finalVal = startingVal + contribVal;
+          if (pot.isTaxable) {
+             finalVal = finalVal * (1 - (this.taxRate / 100));
+          }
+
+          const rReal = this.realRetirementReturnRate / 100;
+          let initialWithdrawal = 0;
+          if (rReal === 0) {
+            initialWithdrawal = finalVal / pot.payoutYears;
+          } else {
+            initialWithdrawal = finalVal / ((1 - Math.pow(1 + rReal, -pot.payoutYears)) / rReal);
+          }
+          
+          const yearsSinceAccess = age - pot.accessAge;
+          const currentWithdrawal = initialWithdrawal * Math.pow(1 + this.inflationRate / 100, yearsSinceAccess);
+          
+          totalIncome += currentWithdrawal;
+          incomeBreakdown[pot.label] = currentWithdrawal;
+        }
+      });
+
+      const netAnnualToday = Math.max(0, totalExpenditureToday - totalPassiveToday);
+      const requiredIncome = netAnnualToday * Math.pow(1 + this.inflationRate / 100, yearFromCurrent);
+      projection.push({
+        age,
+        requiredIncome,
+        totalIncome,
+        shortfall: Math.max(0, requiredIncome - totalIncome),
+        surplus: Math.max(0, totalIncome - requiredIncome),
+        incomeBreakdown
+      });
+    }
+    return projection;
+  }
+
 
   // --- ESTIMATOR ACTIONS ---
 
   estimateMonthlyContribution() {
-    const totalTargetAtAccess = this.requiredPotAtAccessAge;
-    const startingPotsGrowthAtAccess = this.startingPotsValueAtAccessAge;
-    const neededFromContribsAtAccess = Math.max(0, totalTargetAtAccess - startingPotsGrowthAtAccess);
+    let low = 0;
+    let high = 50000;
+    let best = 0;
 
-    const avgRate = this.averageContributionReturnRate;
-    const coastingRate = avgRate / 100;
-    const neededFromContribsAtContribEnd = neededFromContribsAtAccess / Math.pow(1 + coastingRate, this.yearsCoasting);
-
-    const nominalMonthlyRate = avgRate / 100 / 12;
-    const realMonthlyRate = (avgRate - this.inflationRate) / 100 / 12;
-    const r = this.increaseContributionWithInflation ? nominalMonthlyRate : realMonthlyRate;
-    const months = this.yearsContributing * 12;
-
-    let calculatedContrib = 0;
-    if (months > 0) {
-      if (r > 0) {
-        const annuityFactor = (Math.pow(1 + r, months) - 1) / r;
-        calculatedContrib = Math.round(neededFromContribsAtContribEnd / annuityFactor);
+    const originalContributions = this.pots.map(p => p.monthlyContribution);
+    const totalOriginal = this.totalMonthlyContribution;
+    
+    for (let i = 0; i < 50; i++) {
+      const mid = Math.round((low + high) / 2);
+      
+      if (totalOriginal > 0) {
+        this.pots.forEach((p, idx) => {
+          p.monthlyContribution = Math.round((originalContributions[idx] / totalOriginal) * mid);
+        });
       } else {
-        calculatedContrib = Math.round(neededFromContribsAtContribEnd / months);
+        const share = Math.round(mid / this.pots.length);
+        this.pots.forEach(p => p.monthlyContribution = share);
+      }
+      
+      if (this.isCoastReady) {
+        best = mid;
+        high = mid - 1;
+      } else {
+        low = mid + 1;
       }
     }
+    
+    this.pots.forEach((p, idx) => p.monthlyContribution = originalContributions[idx]);
 
     this.activeEstimate = {
       type: 'contribution',
-      value: calculatedContrib,
+      value: best,
       label: 'Estimated Required Monthly Contribution (Total Across Pots)',
       unit: '£'
     };
   }
 
   estimateCoastingYears() {
-    const builtPot = this.projectedPotAfterContributionPhase;
-    const targetPot = this.requiredPotAtAccessAge;
-    const r = this.averageContributionReturnRate / 100;
-
-    let requiredYears = 0;
-    if (builtPot > 0 && targetPot > builtPot && r > 0) {
-      requiredYears = Math.log(targetPot / builtPot) / Math.log(1 + r);
+    let requiredAdditionalYears = 0;
+    let found = false;
+    
+    const originalAccessAges = this.pots.map(p => p.accessAge);
+    
+    for (let i = 0; i <= 60; i++) {
+      this.pots.forEach((p, idx) => p.accessAge = originalAccessAges[idx] + i);
+      
+      if (this.isCoastReady) {
+        requiredAdditionalYears = i;
+        found = true;
+        break;
+      }
     }
+    
+    this.pots.forEach((p, idx) => p.accessAge = originalAccessAges[idx]);
 
-    this.activeEstimate = {
-      type: 'coasting',
-      value: Math.max(0, Number(requiredYears.toFixed(1))),
-      label: 'Estimated Required Coasting Years',
-      unit: 'years'
-    };
+    if (found) {
+      this.activeEstimate = {
+        type: 'coasting',
+        value: requiredAdditionalYears,
+        label: 'Additional Years to Delay Access (Across all pots)',
+        unit: 'years'
+      };
+    } else {
+      this.activeEstimate = {
+        type: 'coasting',
+        value: 0,
+        label: 'Could not resolve additional years (Max limit)',
+        unit: 'years'
+      };
+    }
   }
 
   applyEstimate() {
@@ -274,20 +340,21 @@ export class App {
       const oldTotal = this.totalMonthlyContribution;
 
       if (oldTotal > 0) {
-        // Distribute proportionally across existing pot contributions
         this.pots.forEach(pot => {
           pot.monthlyContribution = Math.round((pot.monthlyContribution / oldTotal) * newTotal);
         });
       } else if (this.pots.length > 0) {
-        // Divide equally if current contributions are 0
         const share = Math.round(newTotal / this.pots.length);
         this.pots.forEach(pot => pot.monthlyContribution = share);
       }
     } else if (this.activeEstimate.type === 'coasting') {
-      this.retirementAge = this.currentAge + this.yearsContributing + this.activeEstimate.value;
+      const additionalYears = this.activeEstimate.value;
+      this.pots.forEach(pot => pot.accessAge += additionalYears);
+
     }
 
     this.activeEstimate = null;
+
   }
 
   dismissEstimate() {
@@ -300,33 +367,30 @@ export class App {
     const settingsRows = [
       { Setting: 'Plan Title', Value: this.planTitle },
       { Setting: 'Current Age', Value: this.currentAge },
-      { Setting: 'Retirement Access Age', Value: this.retirementAge },
-      { Setting: 'Payout Years', Value: this.retirementDurationYears },
-      { Setting: 'Years Contributing', Value: this.yearsContributing },
       { Setting: 'Retirement Return Rate (%)', Value: this.retirementReturnRate },
       { Setting: 'Expected Inflation Rate (%)', Value: this.inflationRate },
+      { Setting: 'Tax Rate on Withdrawals (%)', Value: this.taxRate },
       { Setting: 'Increase Contribution With Inflation', Value: this.increaseContributionWithInflation ? 'Yes' : 'No' },
-      { Setting: 'Passive Monthly Income (£)', Value: this.passiveMonthlyIncome }
+      { Setting: 'Passive Monthly Income (£)', Value: 0 } // Deprecated
     ];
 
     const potRows = this.pots.map(pot => ({
       Account: pot.label,
       'Balance (£)': pot.amount,
       'Expected Return (%)': pot.expectedReturnRate,
-      'Monthly Contribution (£)': pot.monthlyContribution
-    }));
-
-    const expenseRows = this.expenses.map(item => ({
-      Description: item.label,
-      'Monthly Amount (£)': item.amount,
-      'Annual Amount (£)': (item.amount || 0) * 12
+      'Monthly Contribution (£)': pot.monthlyContribution,
+      'Access Age': pot.accessAge || '',
+      'Is Taxable?': pot.isTaxable ? 'Yes' : 'No',
+      'Payout Years': pot.payoutYears || '',
+      'Years Contributing': pot.yearsContributing || 0,
+      'Monthly Expenditure (£)': pot.monthlyExpenditure || 0,
+      'Passive Income (£)': pot.passiveIncome || 0
     }));
 
     const workbook = XLSX.utils.book_new();
 
     XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(settingsRows), 'Assumptions');
     XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(potRows), 'Pots');
-    XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(expenseRows), 'Expenses');
 
     const sanitizedTitle = (this.planTitle || '')
       .trim()
@@ -359,15 +423,12 @@ export class App {
           switch (row.Setting) {
             case 'Plan Title': this.planTitle = valString; break;
             case 'Current Age': this.currentAge = valNum; break;
-            case 'Retirement Access Age': this.retirementAge = valNum; break;
-            case 'Payout Years': this.retirementDurationYears = valNum; break;
-            case 'Years Contributing': this.yearsContributing = valNum; break;
             case 'Retirement Return Rate (%)': this.retirementReturnRate = valNum; break;
             case 'Expected Inflation Rate (%)': this.inflationRate = valNum; break;
+            case 'Tax Rate on Withdrawals (%)': this.taxRate = valNum; break;
             case 'Increase Contribution With Inflation': 
               this.increaseContributionWithInflation = valString.toLowerCase() === 'yes'; 
               break;
-            case 'Passive Monthly Income (£)': this.passiveMonthlyIncome = valNum; break;
           }
         });
       }
@@ -378,17 +439,16 @@ export class App {
           label: row.Account || '',
           amount: Number(row['Balance (£)']) || 0,
           expectedReturnRate: Number(row['Expected Return (%)']) ?? 5,
-          monthlyContribution: Number(row['Monthly Contribution (£)']) || 0
+          monthlyContribution: Number(row['Monthly Contribution (£)']) || 0,
+          accessAge: Number(row['Access Age']) || 55,
+          isTaxable: String(row['Is Taxable?']).toLowerCase() === 'yes',
+          payoutYears: Number(row['Payout Years']) || 30,
+          yearsContributing: Number(row['Years Contributing']) || 0,
+          monthlyExpenditure: Number(row['Monthly Expenditure (£)']) || 0,
+          passiveIncome: Number(row['Passive Income (£)']) || 0
         }));
       }
 
-      if (workbook.SheetNames.includes('Expenses')) {
-        const expenseRows: any[] = XLSX.utils.sheet_to_json(workbook.Sheets['Expenses']);
-        this.expenses = expenseRows.map(row => ({
-          label: row.Description || '',
-          amount: Number(row['Monthly Amount (£)']) || 0
-        }));
-      }
 
       target.value = '';
     };
