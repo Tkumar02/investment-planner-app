@@ -13,6 +13,44 @@
     />
   </div>
 
+
+
+
+<!-- 1. General Info Section -->
+  <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); box-sizing: border-box;">
+    <h3 style="margin-top: 0; margin-bottom: 10px; color: #334155;">1. General Information</h3>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
+      <div>
+        <label style="display: block; margin-bottom: 4px; font-size: 14px; font-weight: 500;">Current Age:</label>
+        <input type="number" [(ngModel)]="currentAge" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;" />
+      </div>
+
+      <div>
+        <label style="display: block; margin-bottom: 4px; font-size: 14px; font-weight: 500;">Retirement Phase Return Rate (%):</label>
+        <input type="number" [(ngModel)]="retirementReturnRate" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;" />
+      </div>
+      <div>
+        <label style="display: block; margin-bottom: 4px; font-size: 14px; font-weight: 500;">Expected Inflation Rate (%):</label>
+        <input type="number" [(ngModel)]="inflationRate" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;" />
+      </div>
+      <div>
+        <label style="display: block; margin-bottom: 4px; font-size: 14px; font-weight: 500;">Tax Rate on Withdrawals (%):</label>
+        <input type="number" [(ngModel)]="taxRate" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;" />
+      </div>
+    </div>
+
+
+</div>
+
+
+
+
+
+
+
+
+
   <!-- 2. Timeline, Assumptions & Investment Pots Section -->
   <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); box-sizing: border-box;">
     <h3 style="margin-top: 0; color: #334155;">2. Timeline & Investment Pots</h3>
@@ -116,25 +154,7 @@
       </div>
     </div>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
-      <div>
-        <label style="display: block; margin-bottom: 4px; font-size: 14px; font-weight: 500;">Current Age:</label>
-        <input type="number" [(ngModel)]="currentAge" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;" />
-      </div>
-
-      <div>
-        <label style="display: block; margin-bottom: 4px; font-size: 14px; font-weight: 500;">Retirement Phase Return Rate (%):</label>
-        <input type="number" [(ngModel)]="retirementReturnRate" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;" />
-      </div>
-      <div>
-        <label style="display: block; margin-bottom: 4px; font-size: 14px; font-weight: 500;">Expected Inflation Rate (%):</label>
-        <input type="number" [(ngModel)]="inflationRate" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;" />
-      </div>
-      <div>
-        <label style="display: block; margin-bottom: 4px; font-size: 14px; font-weight: 500;">Tax Rate on Withdrawals (%):</label>
-        <input type="number" [(ngModel)]="taxRate" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;" />
-      </div>
-    </div>
+    
 
     <!-- Estimator Solver Action Buttons -->
     <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid #f1f5f9; display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end;">
